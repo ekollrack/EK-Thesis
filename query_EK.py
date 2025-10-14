@@ -15,12 +15,12 @@ def main():
     )
 
     matchups = {
-        "ATL_vs_ARI": {
+        "DET_vs_ARI": {
             "filter": (
-                ((games['away_team'] == 'ATL') & (games['home_team'] == 'ARI')) |
-                ((games['away_team'] == 'ARI') & (games['home_team'] == 'ATL'))
+                ((games['away_team'] == 'DET') & (games['home_team'] == 'ARI')) |
+                ((games['away_team'] == 'ARI') & (games['home_team'] == 'DET'))
             ),
-            "anchors": ["#ARIvsATL", "#ATLvsARI"]
+            "anchors": ["#ARIvsDET", "#DETvsARI"]
         }
     }
 
