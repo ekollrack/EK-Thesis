@@ -1,3 +1,9 @@
+"""
+This code ranks the 30 NFL teams by average attention
+It also graphs the top 5 teams
+Last Modified 10/15/2025 by EK
+"""
+
 import pandas as pd
 from datetime import datetime, timedelta
 from data_mountain_query.query import get_ambient_tweets
@@ -17,8 +23,8 @@ def main():
     collection, client = get_connection(p=p)
 
     # Initialize storage for tweets per team
-    teams_times = {}  # {team: {time_offset: total_tweets}}
-    teams_games_count = {}  # {team: number_of_games}
+    teams_times = {} 
+    teams_games_count = {}  
 
     # 2013-2017
     all_games = games[(games['season'] >= 2013) & (games['season'] <= 2017)]
@@ -33,7 +39,7 @@ def main():
         kickoff = pd.to_datetime(str(gameday.date()) + " " + str(gametime))
 
         start_time = kickoff - timedelta(hours=5)
-        end_time = kickoff + timedelta(hours=24)
+        end_time = kickoff + timedelta(hours=14)
         dates = pd.date_range(start_time, end_time, freq='h')
 
         anchors = [f"#{away}vs{home}", f"#{home}vs{away}"]
@@ -57,11 +63,11 @@ def main():
         # Initialize storage for teams if not exist
         for team in [away, home]:
             if team not in teams_times:
-                teams_times[team] = {h: 0 for h in range(-5, 25)}
+                teams_times[team] = {h: 0 for h in range(-5, 15)}
                 teams_games_count[team] = 0
 
         # Align tweet counts relative to kickoff
-        for time in range(-5, 25):
+        for time in range(-5, 15):
             time_point = kickoff + timedelta(hours=time)
             count = hourly_dict.get(time_point.floor('h'), 0)
             teams_times[away][time] += count
@@ -71,7 +77,6 @@ def main():
         teams_games_count[away] += 1
         teams_games_count[home] += 1
 
-        print(f"Processed game: {away} vs {home} ({kickoff})")
 
     # Compute average tweets per hour per team
     avg_tweets_per_team = {}
@@ -79,10 +84,10 @@ def main():
         avg_tweets_per_team[team] = {time: teams_times[team][time] / teams_games_count[team]
                                      for time in teams_times[team]}
 
-    # Compute overall attention for sorting (sum over 5h-24h)
+    # Compute overall attention for sorting 
     team_total_attention = {}
     for team, counts in avg_tweets_per_team.items():
-        team_total_attention[team] = sum(counts[time] for time in range(-5, 25))
+        team_total_attention[team] = sum(counts[time] for time in range(-5, 15))
 
     # Sort teams by total attention
     sorted_teams = sorted(team_total_attention.items(), key=lambda x: x[1], reverse=True)
@@ -100,7 +105,7 @@ def main():
         plt.plot(times, counts, marker='o', label=team)
 
     plt.axvline(0, color='red', linestyle='--', linewidth=1.5, label='Kickoff')
-    plt.xticks(range(-5, 25), [f"{abs(t)}h before" if t<0 else ("Kickoff" if t==0 else f"{t}h after") for t in range(-5,25)], rotation=45)
+    plt.xticks(range(-5, 15), [f"{abs(t)}h before" if t<0 else ("Kickoff" if t==0 else f"{t}h after") for t in range(-5,15)], rotation=45)
     plt.xlabel("Hours Relative to Kickoff")
     plt.ylabel("Average Tweets per Hour")
     plt.title(f"Top {top_n} Teams by Attention (2013–2017)")

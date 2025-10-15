@@ -1,7 +1,6 @@
 """
-This code graphs and prints average attention of all NFL games 
-(2013-2017 seasons) per hour relative to kickoff.
-Last modified: 10/15/2025 by EK
+This code calculates the percentage of tweets that are posted plus/minus
+72 hours from kickoff out of the tweets posted plus/minus 1 week of gameday
 """
 
 
@@ -14,28 +13,25 @@ import warnings
 warnings.filterwarnings("ignore", message="use an explicit session with no_cursor_timeout=True")
 
 
-
 def main():
     games = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/games.csv")
     # Only want regular season
     games = games[games['game_type'] == 'REG']
     games['gameday'] = pd.to_datetime(games['gameday'], format='%m/%d/%y')
 
-
     p = 1.0
     collection, client = get_connection(p=p)
 
-    # Initialize storage for 5h before kickoff to 15h after
+    # Initialize storage for 7 days before kickoff to 7 days after (hours)
     times = {}
-    for time in range(-5, 15):
+    for time in range(-336, 337):  # 7 days * 24 hours = 168 hours each direction
         times[time] = 0
 
     num_games = 0
 
-    # 2013-2017
+    # 2013–2017
     all_games = games[(games['season'] >= 2013) & (games['season'] <= 2017)]
 
-    # loop through all games in range
     for _, row in all_games.iterrows():
         away = row['away_team']
         home = row['home_team']
@@ -44,18 +40,16 @@ def main():
 
         kickoff = pd.to_datetime(str(gameday.date()) + " " + str(gametime))
 
-        start_time = kickoff - timedelta(hours=5)
-        end_time = kickoff + timedelta(hours=15)
+        start_time = kickoff - timedelta(hours=336)
+        end_time = kickoff + timedelta(hours=336)
         dates = pd.date_range(start_time, end_time, freq='h')
 
         anchors = [f"#{away}vs{home}", f"#{home}vs{away}"]
 
-        # Collect tweets for all hashtag combos
         tweets = []
         for anchor in anchors:
             tweets.extend([t for t in get_ambient_tweets(anchor, dates, collection)])
 
-        # if no tweets are found
         if not tweets:
             continue
 
@@ -63,50 +57,38 @@ def main():
         tweets_df['tweet_created_at'] = pd.to_datetime(tweets_df['tweet_created_at'])
         tweets_df['hour'] = tweets_df['tweet_created_at'].dt.floor('h')
 
-        # Group by hour
         hourly_counts = tweets_df.groupby('hour').size().reset_index(name='count')
         hourly_dict = dict(zip(hourly_counts['hour'], hourly_counts['count']))
 
-        # Align tweet counts relative to kickoff
-        for time in range(-5, 15):
+        for time in range(-336, 337):
             time_point = kickoff + timedelta(hours=time)
             count = hourly_dict.get(time_point.floor('h'), 0)
             times[time] += count
 
         num_games += 1
+        print(f"Processed game {num_games}: {away} vs {home} ({kickoff})")
 
-    # Compute average tweets per hour 
+    # Compute average tweets per hour offset
     avg_tweets_hour = {time: times[time] / num_games for time in times}
 
     # Convert to DataFrame for plotting
     attention_times = pd.DataFrame(list(avg_tweets_hour.items()), columns=['times', 'avg_tweets'])
     attention_times = attention_times.sort_values('times')
 
-    # Print results
-    print("\n=== Average Attention Relative to Kickoff (All Games 2013–2017) ===")
-    print("Label | Avg Tweet Count")
-    for time, avg in avg_tweets_hour.items():
-        if time == 0:
-            label = "Kickoff"
-        elif time < 0:
-            label = f"{abs(time)}h before"
-        else:
-            label = f"{time}h after"
-        print(f"{label:>10} | {avg:.2f}")
+    # --- Compute total tweet counts for each time range ---
+    total_5to24 = sum(times[t] for t in range(-5, 25))
+    total_7day = sum(times[t] for t in range(-168, 169))
+    total_14day = sum(times[t] for t in range(-336, 337))
+    total_3to14 = sum(times[t] for t in range(-3, 15))
+    total_72to72 = sum(times[t] for t in range(-72, 73))
 
 
-    # Plot the attention curve
-    plt.figure(figsize=(10, 6))
-    plt.plot(attention_times['times'], attention_times['avg_tweets'], marker='o', color='blue', linewidth=2)
 
-    plt.axvline(0, color='red', linestyle='--', linewidth=1.5, label='Kickoff')
-    plt.title("Average Attention Around Kickoff (2013–2017)")
-    plt.xlabel("Hours Relative to Kickoff")
-    plt.ylabel("Average Tweets per Hour")
-    plt.grid(True, linestyle='--', alpha=0.6)
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
+    print("\n=== Total Tweet Volume Comparison ===")
+    pct = (total_5to24 / total_7day) * 100
+    print(f"5 hour to 24 hour / 7 to 7 day: %{pct:.2f}")
+    pct_72to72 = (total_72to72 / total_7day) * 100
+    print(f"72 hour to 72 hour / 7 to 7 day: %{pct_72to72:.2f}")
 
     return attention_times
 

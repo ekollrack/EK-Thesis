@@ -1,3 +1,9 @@
+"""
+This code looks at average attention for each week of the regular NFL season
+Last updated 10/15 by EK
+"""
+
+
 import pandas as pd
 from datetime import timedelta
 from data_mountain_query.query import get_ambient_tweets
@@ -9,7 +15,7 @@ def main():
     start_time = time.time()
     
     # Load games
-    games = pd.read_csv("/Users/elisabethkollrack/Thesis/games.csv")
+    games = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/games.csv")
     games = games[games['game_type'] == 'REG']
     games['gameday'] = pd.to_datetime(games['gameday'], format='%m/%d/%y')
 

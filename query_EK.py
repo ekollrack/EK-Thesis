@@ -1,3 +1,9 @@
+"""
+Function to query various anchors for testing purposes.
+Shows the total amount of tweets for the selected matchup throughout the dataset
+Last updated 10/15 by EK
+"""
+
 import pandas as pd
 from datetime import datetime, timedelta
 from data_mountain_query.query import get_ambient_tweets
