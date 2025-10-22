@@ -31,7 +31,7 @@ def main():
     df['home_encoded'] = le_team.fit_transform(df['home_team'])
 
     # Define features (X) and target (y)
-    X = df[['total_score', 'score_differential', 'month', 'day', 'away_encoded', 'home_encoded']]
+    X = df[['total_score', 'score_differential', 'week', 'season', 'overtime', 'away_encoded', 'home_encoded']]
     y = df['attention']
 
     # Split into training and testing sets (80/20)

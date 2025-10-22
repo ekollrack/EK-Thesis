@@ -1,7 +1,7 @@
 """
-This code creates a DataFrame with the date, matchup, total_score, score_differential, and attention
-and saves it to a CSV file.
-Last updated 10/17 by EK
+Generates data to be used for models. Play by play game data
+and game result data will be used to predict attention
+Last updated 10/22 by EK
 """
 
 import pandas as pd
@@ -10,6 +10,7 @@ from data_mountain_query.query import get_ambient_tweets
 from data_mountain_query.connection import get_connection
 import time
 
+
 def main():
     start_time = time.time()
     
@@ -17,6 +18,16 @@ def main():
     games = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/games.csv")
     games = games[games['game_type'] == 'REG']
     games['gameday'] = pd.to_datetime(games['gameday'], format='%m/%d/%y')
+    
+    # Load cumulative win percentages
+    win_pct = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/nfl_r_data.csv")
+    
+    # Merge win_pct into games on 'game_id'
+    games = games.merge(
+        win_pct[['game_id', 'home_win_pct', 'away_win_pct', 'lead_changes']],
+        on='game_id',
+        how='left'
+    )
 
     p = 1.0
     collection, client = get_connection(p=p)
@@ -35,7 +46,6 @@ def main():
 
         for _, row in games_season.iterrows():
             team1, team2 = row['away_team'], row['home_team']
-            matchup = f"{team1}_vs_{team2}"
             gameday = row['gameday']
             total_score = row['total']
             score_diff = abs(row['result'])
@@ -57,11 +67,19 @@ def main():
 
             data_rows.append({
                 'date': gameday.date(),
-                'matchup': matchup,
+                'game_id': row['game_id'],
+                'season': row['season'],
+                'week': row['week'],
+                'weekday': row['weekday'],
+                'gametime': row['gametime'],
                 'home_team': row['home_team'],
                 'away_team': row['away_team'],
+                'home_win_pct': row['home_win_pct'],
+                'away_win_pct': row['away_win_pct'],
+                'num_lead_changes': int(row['lead_changes']),
                 'total_score': total_score,
                 'score_differential': score_diff,
+                'overtime': int(row['overtime']),
                 'attention': attention
             })
 
