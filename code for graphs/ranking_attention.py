@@ -1,7 +1,7 @@
 """
 This code ranks the 30 NFL teams by average attention
 It also graphs the top 5 teams
-Last Modified 10/15/2025 by EK
+Last Modified 10/27/2025 by EK
 """
 
 import pandas as pd
@@ -37,6 +37,7 @@ def main():
         gametime = row['gametime']
 
         kickoff = pd.to_datetime(str(gameday.date()) + " " + str(gametime))
+        kickoff = kickoff.tz_localize('US/Eastern')
 
         start_time = kickoff - timedelta(hours=5)
         end_time = kickoff + timedelta(hours=14)
@@ -53,7 +54,8 @@ def main():
             continue
 
         tweets_df = pd.DataFrame(tweets)
-        tweets_df['tweet_created_at'] = pd.to_datetime(tweets_df['tweet_created_at'])
+        tweets_df['tweet_created_at'] = pd.to_datetime(tweets_df['tweet_created_at'], utc=True)
+        tweets_df['tweet_created_at'] = tweets_df['tweet_created_at'].dt.tz_convert('US/Eastern')
         tweets_df['hour'] = tweets_df['tweet_created_at'].dt.floor('h')
 
         # Group by hour
