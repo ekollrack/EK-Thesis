@@ -1,7 +1,7 @@
 """
 Generates data to be used for models. Play by play game data
 and game result data will be used to predict attention
-Last updated 10/22 by EK
+Last updated 11/6 by EK
 """
 
 import pandas as pd
@@ -20,7 +20,7 @@ def main():
     games['gameday'] = pd.to_datetime(games['gameday'], format='%m/%d/%y')
     
     # Load cumulative win percentages
-    win_pct = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/nfl_r_data.csv")
+    win_pct = pd.read_csv('/Users/elisabethkollrack/Thesis/EK-Thesis/R data/nfl_r_data.csv')
     
     # Merge win_pct into games on 'game_id'
     games = games.merge(
@@ -30,7 +30,7 @@ def main():
     )
 
     p = 1.0
-    collection, client = get_connection(p=p)
+    collection, client = get_connection(user_loc=True)
 
     data_rows = []  # store data for final DataFrame
 
@@ -51,8 +51,8 @@ def main():
             score_diff = abs(row['result'])
 
             anchors = [f"#{team1}vs{team2}", f"#{team2}vs{team1}"]
-            start_date = gameday - timedelta(days=7)
-            end_date = gameday + timedelta(days=7)
+            start_date = gameday - timedelta(days=3)
+            end_date = gameday + timedelta(days=3)
             dates = pd.date_range(start_date, end_date, freq='D')
 
             counts = {}
@@ -62,8 +62,8 @@ def main():
                     tweet_day = pd.to_datetime(tweet['tweet_created_at']).date()
                     counts[tweet_day] = counts.get(tweet_day, 0) + 1
 
-            # total attention for this game (sum over the ±7 days)
-            attention = sum(counts.get((gameday + timedelta(days=d)).date(), 0) for d in range(-7, 8))
+            # total attention for this game (sum over the ±3 days)
+            attention = sum(counts.get((gameday + timedelta(days=d)).date(), 0) for d in range(-3, 4))
 
             data_rows.append({
                 'date': gameday.date(),

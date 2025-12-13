@@ -21,12 +21,12 @@ def main():
     )
 
     matchups = {
-        "DET_vs_ARI": {
+        "DAL_vs_NYG": {
             "filter": (
-                ((games['away_team'] == 'DET') & (games['home_team'] == 'ARI')) |
-                ((games['away_team'] == 'ARI') & (games['home_team'] == 'DET'))
+                ((games['away_team'] == 'DAL') & (games['home_team'] == 'NYG')) |
+                ((games['away_team'] == 'NYG') & (games['home_team'] == 'DAL'))
             ),
-            "anchors": ["#ARIvsDET", "#DETvsARI"]
+            "anchors": ["#NYGvsDAL", "#DALvsNYG"]
         }
     }
 
@@ -36,49 +36,62 @@ def main():
 
     for name, info in matchups.items():
         games_filtered = games[
-            (games['season_year'] >= 2013) &
-            (games['season_year'] <= 2017) &
+            (games['season_year'] == 2013) &
             info["filter"]
         ][['gameday', 'total', 'result', 'season_year']]
 
+        # Get the first matchup of 2013
+        if len(games_filtered) > 0:
+            first_matchup = games_filtered.iloc[0]
+            gameday = first_matchup['gameday'].date()
+            
+            # Define 3-day window: day before, gameday, day after
+            start_date = gameday - timedelta(days=1)
+            end_date = gameday + timedelta(days=1)
+            dates = pd.date_range(start_date, end_date, freq='D')
 
-        start_date = games_filtered['gameday'].min() - timedelta(days=7)
-        end_date = games_filtered['gameday'].max() + timedelta(days=7)
-        dates = pd.date_range(start_date, end_date, freq='D')
+            counts = {}
+            total_tweets = 0
 
-        counts = {}
+            for anchor in info["anchors"]:
+                tweets_list = [t for t in get_ambient_tweets(anchor, dates, collection)]
+                for tweet in tweets_list:
+                    tweet_day = pd.to_datetime(tweet['tweet_created_at']).date()
+                    if tweet_day in counts:
+                        counts[tweet_day] = counts[tweet_day] + 1
+                    else:
+                        counts[tweet_day] = 1
+                    total_tweets += 1
 
-        for anchor in info["anchors"]:
-            tweets_list = [t for t in get_ambient_tweets(anchor, dates, collection)]
-            for tweet in tweets_list:
-                tweet_day = pd.to_datetime(tweet['tweet_created_at']).date()
-                if tweet_day in counts:
-                    counts[tweet_day] = counts[tweet_day] + 1
-                else:
-                    counts[tweet_day] = 1
+            # Sum counts for the 3-day window
+            window_tweets = 0
+            for d in range(-1, 2):  # -1, 0, +1 days
+                day = gameday + timedelta(days=d)
+                if day in counts:
+                    window_tweets += counts[day]
 
-        for year in range(2013, 2018):
-            year_games = games_filtered[games_filtered['season_year'] == year].reset_index(drop=True)
-            for i in range(min(2, len(year_games))):  # Only matchup 1 and 2
-                gameday = year_games.loc[i, "gameday"].date()
-                total_attention = 0
-
-                # Sum counts for 7 days before, gameday, 7 days after
-                for d in range(-7, 8):
-                    day = gameday + timedelta(days=d)
-                    if day in counts:
-                        total_attention = total_attention + counts[day]
-
-                results_all.append({
-                    "matchup": name,
-                    "matchup number": f"{year} Matchup {i+1}",
-                    "total score": year_games.loc[i, "total"],
-                    "score differential": abs(year_games.loc[i, "result"]),
-                    "attention": total_attention
-                })
+            results_all.append({
+                "matchup": name,
+                "matchup_number": "2013 Matchup 1",
+                "gameday": gameday,
+                "3_day_window_start": start_date,
+                "3_day_window_end": end_date,
+                "total_tweets_in_window": window_tweets,
+                "total_tweets_collected": total_tweets,
+                "score": first_matchup["total"],
+                "score_differential": abs(first_matchup["result"])
+            })
 
     results_df = pd.DataFrame(results_all)
     print(results_df)
+    
+    # Print summary
+    if len(results_df) > 0:
+        print(f"\nSUMMARY:")
+        print(f"First DAL vs NYG matchup in 2013: {results_df.iloc[0]['gameday']}")
+        print(f"3-day window: {results_df.iloc[0]['3_day_window_start']} to {results_df.iloc[0]['3_day_window_end']}")
+        print(f"Total tweets in 3-day window: {results_df.iloc[0]['total_tweets_in_window']}")
+    
     return results_df
 
 
