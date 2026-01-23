@@ -1,7 +1,7 @@
 """
 Generates data to be used for models. Play by play game data
 and game result data will be used to predict attention
-Last updated 11/6 by EK
+Last updated 1/15 by EK
 """
 
 import pandas as pd
@@ -48,7 +48,7 @@ def main():
             team1, team2 = row['away_team'], row['home_team']
             gameday = row['gameday']
             total_score = row['total']
-            score_diff = abs(row['result'])
+            score_diff = row['result']
 
             anchors = [f"#{team1}vs{team2}", f"#{team2}vs{team1}"]
             start_date = gameday - timedelta(days=3)
