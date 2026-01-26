@@ -2,7 +2,7 @@ library(nflreadr)
 library(dplyr)
 
 # Seasons to process
-seasons <- 2013:2017
+seasons <- 2010:2014
 
 # -------------------------------
 # 1. Load play-by-play for all seasons and calculate lead changes
@@ -39,7 +39,6 @@ for (season_year in seasons) {
   
   # Keep only regular season games and relevant columns
   games <- games %>%
-    filter(game_type == "REG") %>%
     select(game_id, week, gameday, home_team, away_team, home_score, away_score) %>%
     arrange(gameday)
   
@@ -82,7 +81,7 @@ for (season_year in seasons) {
     home_win_pct <- ifelse(home_stats$games == 0, 0, home_stats$wins / home_stats$games)
     away_win_pct <- ifelse(away_stats$games == 0, 0, away_stats$wins / away_stats$games)
     
-    # ✅ Add lead changes for this game
+    # Add lead changes for this game
     lead_changes <- lead_changes_all$lead_changes[lead_changes_all$game_id == game$game_id]
     lead_changes <- ifelse(length(lead_changes) == 0, 0, lead_changes)  # default to 0 if missing
     
@@ -112,5 +111,6 @@ for (season_year in seasons) {
 # -------------------------------
 # 3. Save and preview
 # -------------------------------
-write.csv(win_pct_all, "nfl_win_pct_2013_2017_with_lead_changes.csv", row.names = FALSE)
+write.csv(win_pct_all, "/Users/elisabethkollrack/Thesis/EK-Thesis/R data/nfl_r_data.csv", row.names = FALSE)
 head(win_pct_all)
+

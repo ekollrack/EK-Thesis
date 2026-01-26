@@ -16,7 +16,6 @@ def main():
     
     # Load games
     games = pd.read_csv("/Users/elisabethkollrack/Thesis/EK-thesis/games.csv")
-    games = games[games['game_type'] == 'REG']
     games['gameday'] = pd.to_datetime(games['gameday'], format='%m/%d/%y')
     
     # Load cumulative win percentages
@@ -35,7 +34,7 @@ def main():
     data_rows = []  # store data for final DataFrame
 
     # Loop over each season 2013–2017
-    for season in range(2013, 2018):
+    for season in range(2010, 2015):
         # Filter the games for that season
         games_season = games[games['season'] == season]
 
@@ -76,7 +75,7 @@ def main():
                 'away_team': row['away_team'],
                 'home_win_pct': row['home_win_pct'],
                 'away_win_pct': row['away_win_pct'],
-                'num_lead_changes': int(row['lead_changes']),
+                'num_lead_changes': row['lead_changes'],
                 'total_score': total_score,
                 'score_differential': score_diff,
                 'overtime': int(row['overtime']),
